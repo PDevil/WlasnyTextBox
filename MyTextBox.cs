@@ -11,9 +11,6 @@ namespace MyTextBox
         private int CurrentLine;
         public SolidBrush BrushActiveLine;
 
-        [DllImport("user32.dll")]
-        static extern bool CreateCaret(IntPtr hWnd, IntPtr hBitmap, int nWidth, int nHeight);
-
         public MyTextBox()
         {
             SelectedBackColor = Color.LightYellow;

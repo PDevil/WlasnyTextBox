@@ -38,6 +38,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Caret.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
     <Compile Include="MyTextBox.cs">
       <SubType>UserControl</SubType>
     </Compile>

@@ -34,6 +34,7 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.Cursor = System.Windows.Forms.Cursors.IBeam;
             this.Name = "MyTextBox";
             this.Load += new System.EventHandler(this.MyTextBox_Load);
             this.Paint += new System.Windows.Forms.PaintEventHandler(this.MyTextBox_Paint);

@@ -39,6 +39,7 @@
             this.Load += new System.EventHandler(this.MyTextBox_Load);
             this.Paint += new System.Windows.Forms.PaintEventHandler(this.MyTextBox_Paint);
             this.Enter += new System.EventHandler(this.MyTextBox_Enter);
+            this.KeyDown += new System.Windows.Forms.KeyEventHandler(this.MyTextBox_KeyDown);
             this.Leave += new System.EventHandler(this.MyTextBox_Leave);
             this.ResumeLayout(false);
 

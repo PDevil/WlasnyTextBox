@@ -53,7 +53,7 @@ namespace MyTextBox
             e.Graphics.FillRectangle(BrushActiveLine, 0, y, this.Size.Width, Font.Height);
 			for(int i = 0; i < TextLines.Count; i++)
 			{
-				TextRenderer.DrawText(e.Graphics, TextLines[i], Font, new Rectangle(0, i * Font.Height, this.Size.Width, this.Size.Height), Color.Black, TextFormatFlags.NoPrefix | TextFormatFlags.Default);
+				TextRenderer.DrawText(e.Graphics, TextLines[i], Font, new Rectangle(0, i * Font.Height, this.Size.Width, this.Size.Height), Color.Black, TextFormatFlags.NoPrefix | TextFormatFlags.NoPadding);
 			}
             SetCaretPos(x, y);
         }

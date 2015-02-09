@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Windows.Forms;
 
 namespace MyTextBox
@@ -13,8 +15,12 @@ namespace MyTextBox
 		private int CurrentLine;
 		private int CurrentLineIndex;
         private List<string> TextLines;
-		private Size ControlSize;
         private SolidBrush BrushActiveLine;
+
+		[DllImport("user32.dll")]
+		static extern int ToUnicode(uint wVirtKey, uint wScanCode, byte[] lpKeyState,
+		  [Out, MarshalAs(UnmanagedType.LPWStr, SizeConst = 64)] StringBuilder pwszBuff, int cchBuff,
+		  uint wFlags); // Konwertuje VK na znaki Unicode
 
         public MyTextBox()
         {
@@ -24,7 +30,8 @@ namespace MyTextBox
             AllLines = 0;
             CurrentLine = 0;
 			CurrentLineIndex = 0;
-            TextLines = new List<string>(1);
+			TextLines = new List<string>(1);
+			TextLines.Add(string.Empty);
             BrushActiveLine = new SolidBrush(SelectedBackColor); // Kolor tła aktywnej linii
         }
 
@@ -41,10 +48,13 @@ namespace MyTextBox
 
         private void MyTextBox_Paint(object sender, PaintEventArgs e)
         {
-			TextRenderer.MeasureText()
             int x = 0;
             int y = CurrentLine * Font.Height;
-            e.Graphics.FillRectangle(BrushActiveLine, x, y, this.Size.Width, Font.Height);
+            e.Graphics.FillRectangle(BrushActiveLine, 0, y, this.Size.Width, Font.Height);
+			for(int i = 0; i < TextLines.Count; i++)
+			{
+				TextRenderer.DrawText(e.Graphics, TextLines[i], Font, new Rectangle(0, i * Font.Height, this.Size.Width, this.Size.Height), Color.Black, TextFormatFlags.NoPrefix | TextFormatFlags.Default);
+			}
             SetCaretPos(x, y);
         }
 
@@ -63,37 +73,56 @@ namespace MyTextBox
             // Nowa linia - Enter
             if(e.KeyCode == Keys.Enter)
             {
-                TextLines.Insert(CurrentLine, string.Empty);
+                TextLines.Insert(CurrentLine + 1, string.Empty);
                 AllLines++;
                 CurrentLine++;
+				if (CurrentLineIndex > TextLines[CurrentLine].Length)
+					CurrentLineIndex = TextLines[CurrentLine].Length;
+
                 this.Invalidate();
             }
 
             // Usuwanie znaku - BackSp
             else if(e.KeyCode == Keys.Back)
             {
-                if (AllLines > 0)
-                {
-					if(TextLines[CurrentLine] == string.Empty)
+				Debug.Write("KeyCode: Backspace Akcja: ");
+                if(TextLines[CurrentLine] == string.Empty)
+				{
+					Debug.Write("Usuwanie linijki tekstu");
+					if (AllLines >= 1)
 					{
+						TextLines.RemoveAt(CurrentLine);
 						AllLines--;
 						CurrentLine--;
-						TextLines.RemoveAt(CurrentLine);
+						CurrentLineIndex = TextLines[CurrentLine].Length;
+						Debug.WriteLine(string.Format(" Rezultat: Usunięto 1 linię\nVars: -> [AllLines: {0}], [CurrentLine: {1}], [TextLines[{2}]: \"{3}\"]", AllLines, CurrentLine, CurrentLine, TextLines[CurrentLine]));
+						this.Invalidate();
 					}
-					else
-					{
-						TextLines[CurrentLine].Remove(CurrentLineIndex, 1);
-					}
-                    this.Invalidate();
-                }
+					Debug.WriteIf(AllLines == 0, "\n");
+				}
+				else
+				{
+					Debug.Write("Usuwanie znaku");
+					CurrentLineIndex--;
+					TextLines[CurrentLine] =  TextLines[CurrentLine].Remove(CurrentLineIndex, 1);
+					Debug.WriteLine(string.Format(" Rezultat: Usunięto znak z indeksu {0}\nVars: [CurrentLineIndex: {1}], [TextLines[{2}]: \"{3}\"{4}]", CurrentLineIndex, CurrentLineIndex, CurrentLine, TextLines[CurrentLine], TextLines[CurrentLine] == string.Empty ? " (sE)" : ""));
+					this.Invalidate();
+				}
             }
 
 			// Normalny znak
             else
             {
+				Debug.Write("Dodawanie znaku");
                 KeysConverter keyConv = new KeysConverter();
-				TextLines[CurrentLine].Insert(CurrentLineIndex, keyConv.ConvertToString(e.KeyData));
-				CurrentLineIndex++;
+				string ch = keyConv.ConvertToString(e.KeyCode);
+				if (TextLines[CurrentLine].Length == CurrentLineIndex)
+					TextLines[CurrentLine] += ch;
+				else
+					TextLines[CurrentLine].Insert(CurrentLineIndex, ch);
+
+				CurrentLineIndex += ch.Length;
+				Debug.WriteLine(string.Format(" Rezultat: Dodano '{0}' do tekstu\nVars: [CurrentLine: {1}], [CurrentLineIndex: {2}], [TextLines[{1}]: \"{3}\"]", ch, CurrentLine, CurrentLineIndex, TextLines[CurrentLine]));
 				this.Invalidate();
             }
         }

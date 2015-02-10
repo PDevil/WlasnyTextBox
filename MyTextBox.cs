@@ -22,6 +22,10 @@ namespace MyTextBox
 		  [Out, MarshalAs(UnmanagedType.LPWStr, SizeConst = 64)] StringBuilder pwszBuff, int cchBuff,
 		  uint wFlags); // Konwertuje VK na znaki Unicode
 
+		[DllImport("user32.dll", SetLastError = true)]
+		[return: MarshalAs(UnmanagedType.Bool)]
+		static extern bool GetKeyboardState(byte[] lpKeyState);
+
         public MyTextBox()
         {
             InitializeComponent();
@@ -114,16 +118,29 @@ namespace MyTextBox
             else
             {
 				Debug.Write("Dodawanie znaku");
-                KeysConverter keyConv = new KeysConverter();
-				string ch = keyConv.ConvertToString(e.KeyCode);
-				if (TextLines[CurrentLine].Length == CurrentLineIndex)
-					TextLines[CurrentLine] += ch;
-				else
-					TextLines[CurrentLine].Insert(CurrentLineIndex, ch);
+				byte[] keyb = new byte[256];
+				StringBuilder sb = new StringBuilder(64);
+				GetKeyboardState(keyb); // Pobranie informacji nt. przycisków
+				int result = ToUnicode((uint)e.KeyValue, 0, keyb, sb, 64, 0); // Zamiana bitów na znak Unicode
+				if (result != 0)
+				{
+					if (TextLines[CurrentLine].Length == CurrentLineIndex)
+						TextLines[CurrentLine] += sb;
+					else
+						TextLines[CurrentLine].Insert(CurrentLineIndex, sb.ToString());
 
-				CurrentLineIndex += ch.Length;
-				Debug.WriteLine(string.Format(" Rezultat: Dodano '{0}' do tekstu\nVars: [CurrentLine: {1}], [CurrentLineIndex: {2}], [TextLines[{1}]: \"{3}\"]", ch, CurrentLine, CurrentLineIndex, TextLines[CurrentLine]));
-				this.Invalidate();
+					if (result == 1)
+						CurrentLineIndex += 1;
+					else if (result >= 2)
+						CurrentLineIndex += result;
+
+					Debug.WriteLine(string.Format(" Rezultat: Dodano '{0}' do tekstu\nVars: [CurrentLine: {1}], [CurrentLineIndex: {2}], [TextLines[{1}]: \"{3}\"]", sb, CurrentLine, CurrentLineIndex, TextLines[CurrentLine]));
+					this.Invalidate();
+				}
+				else
+				{
+					Debug.WriteLine(string.Format(" Rezultat: ToUnicode zwróciło 0 (brak znaku do dodawania)"));
+				}
             }
         }
     }

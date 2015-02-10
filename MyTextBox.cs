@@ -52,20 +52,20 @@ namespace MyTextBox
         private void MyTextBox_Load(object sender, EventArgs e)
         {
             CreateCaret(this.Handle, IntPtr.Zero, 0, Font.Height); // Karetka
+			SetCaretPos(0, 0);
         }
 
 		protected override void OnPaint(PaintEventArgs e)
 		{
-			base.OnPaint(e);
-
-			int x = 0;
+			//int x = 0;
 			int y = CurrentLine * Font.Height;
 			e.Graphics.FillRectangle(BrushActiveLine, 0, y, this.Size.Width, Font.Height);
 			for (int i = 0; i < TextLines.Count; i++)
 			{
-				TextRenderer.DrawText(e.Graphics, TextLines[i], Font, new Rectangle(0, i * Font.Height, this.Size.Width, this.Size.Height), Color.Black, TextFormatFlags.NoPrefix | TextFormatFlags.NoPadding);
+				TextRenderer.DrawText(e.Graphics, TextLines[i], Font, new Rectangle(0, i * Font.Height, this.Size.Width, this.Size.Height), Color.Black, TextFormatFlags.NoPrefix | TextFormatFlags.NoPadding | TextFormatFlags.ExpandTabs);
 			}
-			SetCaretPos(x, y);
+
+			base.OnPaint(e);
 		}
 
         private void MyTextBox_Enter(object sender, EventArgs e)
@@ -78,7 +78,18 @@ namespace MyTextBox
             HideCaret(this.Handle);
         }
 
-        private void MyTextBox_KeyDown(object sender, KeyEventArgs e)
+		protected override bool IsInputKey(Keys keyData)
+		{
+			//if (keyData == Keys.Tab)
+			//{
+			//	return true;
+			//}
+
+			//return base.IsInputKey(keyData);
+			return true;
+		}
+
+        protected override void OnKeyDown(KeyEventArgs e)
         {
             // Nowa linia - Enter
             if(e.KeyCode == Keys.Enter)
@@ -114,11 +125,25 @@ namespace MyTextBox
 				{
 					Debug.Write("Usuwanie znaku");
 					CurrentLineIndex--;
-					TextLines[CurrentLine] =  TextLines[CurrentLine].Remove(CurrentLineIndex, 1);
+					TextLines[CurrentLine] = TextLines[CurrentLine].Remove(CurrentLineIndex, 1);
 					Debug.WriteLine(string.Format(" Rezultat: Usunięto znak z indeksu {0}\nVars: [CurrentLineIndex: {1}], [TextLines[{2}]: \"{3}\"{4}]", CurrentLineIndex, CurrentLineIndex, CurrentLine, TextLines[CurrentLine], TextLines[CurrentLine] == string.Empty ? " (sE)" : ""));
 					this.Invalidate();
 				}
             }
+
+			// Góra, Dół, Prawo, Lewo
+			else if(e.KeyValue >= 37 && e.KeyValue <= 40)
+			{
+				Debug.Write("Strzałki");
+				Debug.WriteLine("");
+			}
+
+			// Ctrl <- TODO
+			else if(e.Control == true)
+			{
+				Debug.Write("Control");
+				Debug.WriteLine("");
+			}
 
 			// Normalny znak
             else
@@ -135,19 +160,41 @@ namespace MyTextBox
 					else
 						TextLines[CurrentLine].Insert(CurrentLineIndex, sb.ToString());
 
-					if (result == 1)
+					if (result >= 1)
+					{
 						CurrentLineIndex += 1;
-					else if (result >= 2)
-						CurrentLineIndex += result;
+					}
+					//else if (result >= 2)
+					//{
+					//	CurrentLineIndex += result;
+					//}
+
+					using (Graphics g = this.CreateGraphics())
+					{
+						Size s;
+						Point p = new Point();
+						GetCaretPos(out p);
+						if (e.KeyCode == Keys.Tab)
+						{
+							s = TextRenderer.MeasureText(g, TextLines[CurrentLine].Substring(0, CurrentLineIndex), this.Font, new Size(), TextFormatFlags.NoPrefix | TextFormatFlags.NoPadding | TextFormatFlags.ExpandTabs);
+							SetCaretPos(s.Width, p.Y);
+						}
+						else
+						{
+							s = TextRenderer.MeasureText(g, sb.ToString(), this.Font, new Size(), TextFormatFlags.NoPrefix | TextFormatFlags.NoPadding | TextFormatFlags.ExpandTabs);
+							SetCaretPos(p.X + s.Width, p.Y);
+						}
+
+						Debug.Write(string.Format(" MT: keyb=\"{0}\", p={1}, s={2}, sb={3}", keyb, p, s, sb.ToString()));
+					}
 
 					Debug.WriteLine(string.Format(" Rezultat: Dodano '{0}' do tekstu\nVars: [CurrentLine: {1}], [CurrentLineIndex: {2}], [TextLines[{1}]: \"{3}\"]", sb, CurrentLine, CurrentLineIndex, TextLines[CurrentLine]));
 					this.Invalidate();
 				}
-				else
-				{
-					Debug.WriteLine(string.Format(" Rezultat: ToUnicode zwróciło 0 (brak znaku do dodawania)"));
-				}
+				Debug.WriteLineIf(result == 0, string.Format(" Rezultat: ToUnicode zwróciło 0 (brak znaku do dodawania)"));
             }
+
+			base.OnKeyDown(e);
         }
     }
 }

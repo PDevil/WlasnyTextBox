@@ -28,6 +28,10 @@ namespace MyTextBox
 
         public MyTextBox()
         {
+			SetStyle(ControlStyles.OptimizedDoubleBuffer, true);
+			SetStyle(ControlStyles.AllPaintingInWmPaint, true);
+			SetStyle(ControlStyles.UserPaint, true);
+
             InitializeComponent();
 
             SelectedBackColor = Color.LightYellow;
@@ -50,17 +54,19 @@ namespace MyTextBox
             CreateCaret(this.Handle, IntPtr.Zero, 0, Font.Height); // Karetka
         }
 
-        private void MyTextBox_Paint(object sender, PaintEventArgs e)
-        {
-            int x = 0;
-            int y = CurrentLine * Font.Height;
-            e.Graphics.FillRectangle(BrushActiveLine, 0, y, this.Size.Width, Font.Height);
-			for(int i = 0; i < TextLines.Count; i++)
+		protected override void OnPaint(PaintEventArgs e)
+		{
+			base.OnPaint(e);
+
+			int x = 0;
+			int y = CurrentLine * Font.Height;
+			e.Graphics.FillRectangle(BrushActiveLine, 0, y, this.Size.Width, Font.Height);
+			for (int i = 0; i < TextLines.Count; i++)
 			{
 				TextRenderer.DrawText(e.Graphics, TextLines[i], Font, new Rectangle(0, i * Font.Height, this.Size.Width, this.Size.Height), Color.Black, TextFormatFlags.NoPrefix | TextFormatFlags.NoPadding);
 			}
-            SetCaretPos(x, y);
-        }
+			SetCaretPos(x, y);
+		}
 
         private void MyTextBox_Enter(object sender, EventArgs e)
         {

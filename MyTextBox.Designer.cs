@@ -28,20 +28,19 @@
         /// </summary>
         private void InitializeComponent()
         {
-            this.SuspendLayout();
-            // 
-            // MyTextBox
-            // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.Cursor = System.Windows.Forms.Cursors.IBeam;
-            this.Name = "MyTextBox";
-            this.Load += new System.EventHandler(this.MyTextBox_Load);
-            this.Paint += new System.Windows.Forms.PaintEventHandler(this.MyTextBox_Paint);
-            this.Enter += new System.EventHandler(this.MyTextBox_Enter);
-            this.KeyDown += new System.Windows.Forms.KeyEventHandler(this.MyTextBox_KeyDown);
-            this.Leave += new System.EventHandler(this.MyTextBox_Leave);
-            this.ResumeLayout(false);
+			this.SuspendLayout();
+			// 
+			// MyTextBox
+			// 
+			this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
+			this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+			this.Cursor = System.Windows.Forms.Cursors.IBeam;
+			this.Name = "MyTextBox";
+			this.Load += new System.EventHandler(this.MyTextBox_Load);
+			this.Enter += new System.EventHandler(this.MyTextBox_Enter);
+			this.KeyDown += new System.Windows.Forms.KeyEventHandler(this.MyTextBox_KeyDown);
+			this.Leave += new System.EventHandler(this.MyTextBox_Leave);
+			this.ResumeLayout(false);
 
         }
 

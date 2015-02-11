@@ -97,8 +97,10 @@ namespace MyTextBox
                 TextLines.Insert(CurrentLine + 1, string.Empty);
                 AllLines++;
                 CurrentLine++;
-				if (CurrentLineIndex > TextLines[CurrentLine].Length)
-					CurrentLineIndex = TextLines[CurrentLine].Length;
+				CurrentLineIndex = 0;
+				Point p = new Point();
+				GetCaretPos(out p);
+				SetCaretPos(0, p.Y + this.Font.Height);
 
                 this.Invalidate();
             }
@@ -116,6 +118,14 @@ namespace MyTextBox
 						AllLines--;
 						CurrentLine--;
 						CurrentLineIndex = TextLines[CurrentLine].Length;
+						using (Graphics g = this.CreateGraphics())
+						{
+							Size s;
+							Point p = new Point();
+							GetCaretPos(out p);
+							s = TextRenderer.MeasureText(g, TextLines[CurrentLine], this.Font, new Size(), TextFormatFlags.NoPrefix | TextFormatFlags.NoPadding | TextFormatFlags.ExpandTabs);
+							SetCaretPos(s.Width, p.Y - this.Font.Height);
+						}
 						Debug.WriteLine(string.Format(" Rezultat: Usunięto 1 linię\nVars: -> [AllLines: {0}], [CurrentLine: {1}], [TextLines[{2}]: \"{3}\"]", AllLines, CurrentLine, CurrentLine, TextLines[CurrentLine]));
 						this.Invalidate();
 					}
@@ -125,6 +135,25 @@ namespace MyTextBox
 				{
 					Debug.Write("Usuwanie znaku");
 					CurrentLineIndex--;
+					char chr = TextLines[CurrentLine][CurrentLineIndex];
+					using (Graphics g = this.CreateGraphics())
+					{
+						Size s;
+						Point p = new Point();
+						GetCaretPos(out p);
+						if (chr == '\t')
+						{
+							s = TextRenderer.MeasureText(g, TextLines[CurrentLine].Substring(0, CurrentLineIndex), this.Font, new Size(), TextFormatFlags.NoPrefix | TextFormatFlags.NoPadding | TextFormatFlags.ExpandTabs);
+							SetCaretPos(s.Width, p.Y);
+						}
+						else
+						{
+							s = TextRenderer.MeasureText(g, chr.ToString(), this.Font, new Size(), TextFormatFlags.NoPrefix | TextFormatFlags.NoPadding | TextFormatFlags.ExpandTabs);
+							SetCaretPos(p.X - s.Width, p.Y);
+						}
+
+						Debug.Write(string.Format(" MT: chr=\"{0}\", p={1}, s={2}", chr, p, s));
+					}
 					TextLines[CurrentLine] = TextLines[CurrentLine].Remove(CurrentLineIndex, 1);
 					Debug.WriteLine(string.Format(" Rezultat: Usunięto znak z indeksu {0}\nVars: [CurrentLineIndex: {1}], [TextLines[{2}]: \"{3}\"{4}]", CurrentLineIndex, CurrentLineIndex, CurrentLine, TextLines[CurrentLine], TextLines[CurrentLine] == string.Empty ? " (sE)" : ""));
 					this.Invalidate();
@@ -139,15 +168,14 @@ namespace MyTextBox
 			}
 
 			// Ctrl <- TODO
-			else if(e.Control == true)
-			{
-				Debug.Write("Control");
-				Debug.WriteLine("");
-			}
+			//else if (e.Control == true)
+			//{
+			//	Debug.Write(string.Format("Control [KeyValue: 0x{0}, KeyData: 0x{1}, KeyChar: 0x{2}]", Convert.ToString(e.KeyValue, 16).PadLeft(8, '0'), Convert.ToString((int)e.KeyData, 16).PadLeft(8, '0'), Convert.ToString((int)e.KeyCode, 16).PadLeft(8, '0')));
+			//}
 
 			// Normalny znak
-            else
-            {
+			else
+			{
 				Debug.Write("Dodawanie znaku");
 				byte[] keyb = new byte[256];
 				StringBuilder sb = new StringBuilder(64);
@@ -155,19 +183,13 @@ namespace MyTextBox
 				int result = ToUnicode((uint)e.KeyValue, 0, keyb, sb, 64, 0); // Zamiana bitów na znak Unicode
 				if (result != 0)
 				{
+					string ret = sb[0].ToString();
 					if (TextLines[CurrentLine].Length == CurrentLineIndex)
-						TextLines[CurrentLine] += sb;
+						TextLines[CurrentLine] += ret;
 					else
 						TextLines[CurrentLine].Insert(CurrentLineIndex, sb.ToString());
 
-					if (result >= 1)
-					{
-						CurrentLineIndex += 1;
-					}
-					//else if (result >= 2)
-					//{
-					//	CurrentLineIndex += result;
-					//}
+					CurrentLineIndex += 1;
 
 					using (Graphics g = this.CreateGraphics())
 					{
@@ -181,18 +203,18 @@ namespace MyTextBox
 						}
 						else
 						{
-							s = TextRenderer.MeasureText(g, sb.ToString(), this.Font, new Size(), TextFormatFlags.NoPrefix | TextFormatFlags.NoPadding | TextFormatFlags.ExpandTabs);
+							s = TextRenderer.MeasureText(g, ret, this.Font, new Size(), TextFormatFlags.NoPrefix | TextFormatFlags.NoPadding | TextFormatFlags.ExpandTabs);
 							SetCaretPos(p.X + s.Width, p.Y);
 						}
 
-						Debug.Write(string.Format(" MT: keyb=\"{0}\", p={1}, s={2}, sb={3}", keyb, p, s, sb.ToString()));
+						Debug.Write(string.Format(" MT: keyb=\"{0}\", p={1}, s={2}, ret={3}", keyb, p, s, ret));
 					}
 
-					Debug.WriteLine(string.Format(" Rezultat: Dodano '{0}' do tekstu\nVars: [CurrentLine: {1}], [CurrentLineIndex: {2}], [TextLines[{1}]: \"{3}\"]", sb, CurrentLine, CurrentLineIndex, TextLines[CurrentLine]));
+					Debug.WriteLine(string.Format(" Rezultat: Dodano '{0}' do tekstu\nVars: [CurrentLine: {1}], [CurrentLineIndex: {2}], [TextLines[{1}]: \"{3}\"]", ret, CurrentLine, CurrentLineIndex, TextLines[CurrentLine]));
 					this.Invalidate();
 				}
 				Debug.WriteLineIf(result == 0, string.Format(" Rezultat: ToUnicode zwróciło 0 (brak znaku do dodawania)"));
-            }
+			}
 
 			base.OnKeyDown(e);
         }

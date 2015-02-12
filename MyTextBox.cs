@@ -160,10 +160,108 @@ namespace MyTextBox
 				}
             }
 
-			// Góra, Dół, Prawo, Lewo
+			// Lewo [0x25], Góra [0x26], Prawo [0x27], Dół [0x28]
 			else if(e.KeyValue >= 37 && e.KeyValue <= 40)
 			{
 				Debug.Write("Strzałki");
+				Debug.WriteLine(" Klawisz: 0x" + Convert.ToString(e.KeyValue, 16));
+				Point p = new Point();
+				bool leftRight = false;
+				char chr = new char();
+				GetCaretPos(out p);
+				switch (e.KeyCode)
+				{
+					case Keys.Up:
+						if (CurrentLine <= 0)
+							goto Process_KeyDown;
+
+						CurrentLine--;
+						p.Y -= this.Font.Height;
+
+						if (CurrentLineIndex > TextLines[CurrentLine].Length)
+							CurrentLineIndex = TextLines[CurrentLine].Length;
+
+						Debug.Write(string.Format(" (Góra) CurrentLine--[{0}]", CurrentLine));
+						break;
+
+					case Keys.Down:
+						if (CurrentLine >= AllLines)
+							goto Process_KeyDown;
+
+						CurrentLine++;
+						p.Y += this.Font.Height;
+
+						if (CurrentLineIndex > TextLines[CurrentLine].Length)
+							CurrentLineIndex = TextLines[CurrentLine].Length;
+
+						Debug.Write(string.Format(" (Dół) CurrentLine++[{0}]", CurrentLine));
+						break;
+
+					case Keys.Left:
+						if (CurrentLineIndex <= 0)
+						{
+							if (CurrentLine <= 0)
+								goto Process_KeyDown;
+
+							CurrentLine--;
+							CurrentLineIndex = TextLines[CurrentLine].Length;
+							p.Y -= this.Font.Height;
+						}
+						else
+						{
+							leftRight = true;
+							CurrentLineIndex--;
+							chr = TextLines[CurrentLine][CurrentLineIndex];
+						}
+
+						Debug.Write(string.Format(" (Lewo) CurrentLineIndex--[{0}] chr={1}", CurrentLineIndex, chr));
+						break;
+
+					case Keys.Right:
+						if (CurrentLineIndex >= TextLines[CurrentLine].Length)
+						{
+							if (CurrentLine == AllLines)
+								goto Process_KeyDown;
+
+							CurrentLine++;
+							CurrentLineIndex = 0;
+							p.Y += this.Font.Height;
+						}
+						else
+						{
+							leftRight = true;
+							chr = TextLines[CurrentLine][CurrentLineIndex];
+							CurrentLineIndex++;
+						}
+
+						Debug.Write(string.Format(" (Prawo) CurrentLineIndex++[{0}] chr={1}", CurrentLineIndex, chr));
+						break;
+				}
+
+				Size s;
+				using(Graphics g = this.CreateGraphics())
+				{
+					if(leftRight == false) // Jeśli zmieniana jest linia z góry na dół
+					{
+						if (CurrentLineIndex == 0) // Nie ma sensu wywoływać funkcji dla pustego ciągu znaków
+						{
+							SetCaretPos(0, p.Y);
+						}
+						else // Prawda...?
+						{
+							s = TextRenderer.MeasureText(g, TextLines[CurrentLine].Substring(0, CurrentLineIndex), this.Font, new Size(), TextFormatFlags.NoPrefix | TextFormatFlags.NoPadding | TextFormatFlags.ExpandTabs);
+							SetCaretPos(s.Width, p.Y);
+							Debug.Write(string.Format(" s={0}", s.ToString()));
+						}
+					}
+					else // Jeśli zmieniany jest tylko indeks prawy/lewy
+					{
+						s = TextRenderer.MeasureText(g, chr.ToString(), this.Font, new Size(), TextFormatFlags.NoPrefix | TextFormatFlags.NoPadding | TextFormatFlags.ExpandTabs);
+						SetCaretPos((e.KeyValue == 37) ? (p.X - s.Width) : (p.X + s.Width), p.Y);
+						Debug.Write(string.Format(" s={0}", s.ToString()));
+					}
+				}
+				this.Invalidate();
 				Debug.WriteLine("");
 			}
 
@@ -176,6 +274,9 @@ namespace MyTextBox
 			// Normalny znak
 			else
 			{
+				if (e.KeyCode == Keys.Escape)
+					goto Process_KeyDown;
+
 				Debug.Write("Dodawanie znaku");
 				byte[] keyb = new byte[256];
 				StringBuilder sb = new StringBuilder(64);
@@ -187,7 +288,7 @@ namespace MyTextBox
 					if (TextLines[CurrentLine].Length == CurrentLineIndex)
 						TextLines[CurrentLine] += ret;
 					else
-						TextLines[CurrentLine].Insert(CurrentLineIndex, sb.ToString());
+						TextLines[CurrentLine] = TextLines[CurrentLine].Insert(CurrentLineIndex, ret);
 
 					CurrentLineIndex += 1;
 
@@ -216,6 +317,7 @@ namespace MyTextBox
 				Debug.WriteLineIf(result == 0, string.Format(" Rezultat: ToUnicode zwróciło 0 (brak znaku do dodawania)"));
 			}
 
+			Process_KeyDown:
 			base.OnKeyDown(e);
         }
     }
